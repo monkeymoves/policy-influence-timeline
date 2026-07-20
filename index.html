@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Interactive archive of the Agile Initiative and Natural Resources Wales policy influence journey, 2025–2026.">
+  <title>Policy Influence Timeline · Agile Initiative × NRW</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#journey">Skip to journey map</a>
+  <header class="site-intro">
+    <div>
+      <p class="site-intro__eyebrow">Agile Initiative × Natural Resources Wales</p>
+      <h1>Policy influence timeline</h1>
+    </div>
+    <div class="site-intro__summary">
+      <p>A living archive of how co-creation, fieldwork and evidence translation informed Welsh place-based environmental governance from February 2025 to July 2026.</p>
+      <a href="https://www.agile-initiative.ox.ac.uk/sprints/how-can-we-deliver-effective-equitable-and-place-based-environmental-governance/">About the research Sprint <span aria-hidden="true">↗</span></a>
+    </div>
+  </header>
+
+  <main>
+    <section class="journey" id="journey" aria-labelledby="journey-heading">
+      <div class="section-head">
+        <div>
+          <p class="kicker">February 2025–July 2026</p>
+          <h2 id="journey-heading">From evidence to influence</h2>
+        </div>
+        <p>Scroll across the research journey and select a card to see its evidence, actors and connections.</p>
+      </div>
+
+      <div class="controls" aria-label="Journey filters">
+        <div class="filter-group" id="lane-filters" aria-label="Filter by lane"></div>
+        <p class="controls__hint">Scroll across the timeline; connections appear for the selected card.</p>
+      </div>
+
+      <div class="map-layout">
+        <div class="map-viewport" aria-label="Scrollable policy influence timeline">
+          <div class="timeline-map" id="timeline-map">
+            <svg class="connections" id="connections" aria-hidden="true"></svg>
+            <div class="axis" id="axis" aria-hidden="true"></div>
+            <div class="lane-labels" id="lane-labels" aria-hidden="true"></div>
+            <div class="event-nodes" id="event-nodes"></div>
+          </div>
+        </div>
+
+        <aside class="detail-panel" id="detail-panel" aria-live="polite">
+          <p class="detail-panel__prompt">Choose a moment on the map.</p>
+        </aside>
+      </div>
+
+      <div class="mobile-list" id="mobile-list" aria-label="Chronological journey list"></div>
+    </section>
+
+    <section class="pivot" aria-labelledby="pivot-heading">
+      <p class="kicker">What changed</p>
+      <h2 id="pivot-heading">Influence came through translation, timing and relationships</h2>
+      <div class="pivot__grid">
+        <article>
+          <span>01</span>
+          <h3>Evidence stayed live</h3>
+          <p>Survey and fieldwork findings were iterated while the policy questions were still moving.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h3>Outputs travelled</h3>
+          <p>Briefs, summaries and slides were repeatedly adapted for NRW, Welsh Government and Scottish Government settings.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h3>A policy window opened</h3>
+          <p>The election and NRP process made place-based options more salient, including hybrid approaches rather than catchments alone.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>A living record of the Agile Initiative × Natural Resources Wales policy influence journey.</p>
+  </footer>
+
+  <script src="archive-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
