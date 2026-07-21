@@ -274,6 +274,15 @@
 
     /* nudge apart any nodes that collide within a month column, then draw */
     resolveCollisions();
+
+    /* grow the canvas to fit the lowest card so nothing clips */
+    let maxBottom = 0;
+    for (const node of mapInner.querySelectorAll('.map-node')) {
+      maxBottom = Math.max(maxBottom, node.offsetTop + node.offsetHeight);
+    }
+    MAP.height = Math.max(MAP.height, maxBottom + 40);
+    mapInner.style.height = MAP.height + 'px';
+
     drawEdges();
     setZoom(fitZoom(), { x: 0, y: MAP.height / 2 });
     mapScroller.scrollLeft = 0;
