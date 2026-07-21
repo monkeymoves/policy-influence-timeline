@@ -749,5 +749,166 @@
         "Policy collaborators"
       ]
     }
+  ],
+  "links": [
+    {
+      "from": "t01",
+      "to": "t02",
+      "label": "came back final"
+    },
+    {
+      "from": "t02",
+      "to": "t03",
+      "label": "in the cafe"
+    },
+    {
+      "from": "t05",
+      "to": "t07",
+      "label": "shaped the Sprint"
+    },
+    {
+      "from": "t04",
+      "to": "t06",
+      "label": "underpinned"
+    },
+    {
+      "from": "t04",
+      "to": "t11",
+      "label": "underpinned project as it unfolded"
+    },
+    {
+      "from": "t08",
+      "to": "t10"
+    },
+    {
+      "from": "t09",
+      "to": "t10"
+    },
+    {
+      "from": "t10",
+      "to": "t11",
+      "label": "fed in early evidence"
+    },
+    {
+      "from": "t10",
+      "to": "t12"
+    },
+    {
+      "from": "t12",
+      "to": "t13",
+      "style": "dashed"
+    },
+    {
+      "from": "t12",
+      "to": "t24",
+      "label": "'hopeful' narrative"
+    },
+    {
+      "from": "t12",
+      "to": "t19"
+    },
+    {
+      "from": "t16",
+      "to": "t17",
+      "label": "framing conversations"
+    },
+    {
+      "from": "t18",
+      "to": "t17",
+      "label": "drafted at IPBES"
+    },
+    {
+      "from": "t17",
+      "to": "t25",
+      "label": "refined in liaison meetings"
+    },
+    {
+      "from": "t26",
+      "to": "t25",
+      "style": "dashed",
+      "label": "capacity constraint"
+    },
+    {
+      "from": "t25",
+      "to": "t31",
+      "label": "translated the brief"
+    },
+    {
+      "from": "t20",
+      "to": "t31",
+      "label": "opened the door"
+    },
+    {
+      "from": "t21",
+      "to": "t22"
+    },
+    {
+      "from": "t22",
+      "to": "t23",
+      "label": "paper iterations"
+    },
+    {
+      "from": "t15",
+      "to": "t32",
+      "label": "early survey findings"
+    },
+    {
+      "from": "t32",
+      "to": "t30",
+      "label": "synthesis of findings"
+    },
+    {
+      "from": "t32",
+      "to": "t33",
+      "label": "policy report evidence"
+    },
+    {
+      "from": "t28",
+      "to": "t29"
+    },
+    {
+      "from": "t35",
+      "to": "t34",
+      "label": "into the election"
+    },
+    {
+      "from": "t34",
+      "to": "t36",
+      "label": "made place-based salient"
+    },
+    {
+      "from": "t37",
+      "to": "t38"
+    },
+    {
+      "from": "t38",
+      "to": "t39"
+    },
+    {
+      "from": "t40",
+      "to": "t39",
+      "label": "options menu"
+    },
+    {
+      "from": "t41",
+      "to": "t45",
+      "label": "feedback folded in"
+    },
+    {
+      "from": "t11",
+      "to": "t46",
+      "style": "dashed"
+    },
+    {
+      "from": "t15",
+      "to": "t46",
+      "style": "dashed"
+    },
+    {
+      "from": "t17",
+      "to": "t46",
+      "style": "dashed",
+      "label": "earned a role"
+    }
   ]
 }

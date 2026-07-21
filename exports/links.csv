@@ -1,0 +1,34 @@
+﻿from_id,from_title,to_id,to_title,label,style
+t01,NRW route reopened after a round-one failure,t02,First workshop with NRW at Welsh Government,came back final,solid
+t02,First workshop with NRW at Welsh Government,t03,Chance cafe encounter with Ceri Davies,in the cafe,solid
+t05,Early co-creation shaped the research,t07,Formal Sprint period begins,shaped the Sprint,solid
+t04,Literature review underpinned the unfolding project,t06,Abstract submission and conceptual framing development,underpinned,solid
+t04,Literature review underpinned the unfolding project,t11,Early evidence fed into SoNaRR 'Bridges to the Future',underpinned project as it unfolded,solid
+t08,Fieldwork 1,t10,Iterative findings cycle,,solid
+t09,Fieldwork 2,t10,Iterative findings cycle,,solid
+t10,Iterative findings cycle,t11,Early evidence fed into SoNaRR 'Bridges to the Future',fed in early evidence,solid
+t10,Iterative findings cycle,t12,Second analysis and the 'coping to hoping' reframing,,solid
+t12,Second analysis and the 'coping to hoping' reframing,t13,"Conceptual framing fit, but didn't quite do enough",,dashed
+t12,Second analysis and the 'coping to hoping' reframing,t24,'Hopeful' narrative helped findings travel,'hopeful' narrative,solid
+t12,Second analysis and the 'coping to hoping' reframing,t19,Final analysis,,solid
+t16,"Conversations about place-based, focussed and catchment approaches",t17,First draft of policy brief,framing conversations,solid
+t18,Policy brief drafted at IPBES-12 in Manchester,t17,First draft of policy brief,drafted at IPBES,solid
+t17,First draft of policy brief,t25,Policy liaison through existing networks,refined in liaison meetings,solid
+t26,Capacity constraint: NRW lacked resources,t25,Policy liaison through existing networks,capacity constraint,dashed
+t25,Policy liaison through existing networks,t31,Knowledge sharing with Scottish Government,translated the brief,solid
+t20,Scottish Government engagement opened,t31,Knowledge sharing with Scottish Government,opened the door,solid
+t21,Report refined through feedback,t22,Paper 1: drafting and redrafting,,solid
+t22,Paper 1: drafting and redrafting,t23,NRW became intellectual collaborators,paper iterations,solid
+t15,Survey launched,t32,"Survey findings, synthesis and slides fed policy use",early survey findings,solid
+t32,"Survey findings, synthesis and slides fed policy use",t30,NRP Executive Team meetings,synthesis of findings,solid
+t32,"Survey findings, synthesis and slides fed policy use",t33,'Impact Party',policy report evidence,solid
+t28,WG NRP Forum: Sprint team presented,t29,Meeting with Prys Davies,,solid
+t35,Area Statements included in GP manifesto,t34,Senedd elections,into the election,solid
+t34,Senedd elections,t36,Place-based working became more salient,made place-based salient,solid
+t37,Live evidence base translated for short-term requests,t38,Short-term request: Exec Group policy briefing,,solid
+t38,Short-term request: Exec Group policy briefing,t39,Area Statements 2.0 workshop,,solid
+t40,Scottish slides formed an options evidence base,t39,Area Statements 2.0 workshop,options menu,solid
+t41,Final report and brief shared for feedback,t45,Report complete,feedback folded in,solid
+t11,Early evidence fed into SoNaRR 'Bridges to the Future',t46,Pivot point: evidence earned a role in NRP decisions,,dashed
+t15,Survey launched,t46,Pivot point: evidence earned a role in NRP decisions,,dashed
+t17,First draft of policy brief,t46,Pivot point: evidence earned a role in NRP decisions,earned a role,dashed

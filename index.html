@@ -41,6 +41,7 @@
       <div class="toolbar-tools">
         <input type="search" id="searchBox" placeholder="Search the board..." aria-label="Search events">
         <div class="viewtoggle" role="group" aria-label="View">
+          <button type="button" id="viewMap" aria-pressed="false">Map</button>
           <button type="button" id="viewTimeline" class="is-active" aria-pressed="true">Timeline</button>
           <button type="button" id="viewWall" aria-pressed="false">Wall</button>
         </div>
@@ -50,6 +51,18 @@
 </nav>
 
 <main>
+  <section id="mapView" class="map" aria-label="Influence map" hidden>
+    <p class="map-hint">Drag to pan, or use the month scrubber above. Click an event to trace its connections; click the paper to clear.</p>
+    <div class="map-scroller" id="mapScroller">
+      <div class="map-canvas" id="mapCanvas"><div class="map-inner" id="mapInner"></div></div>
+    </div>
+    <aside class="map-panel" id="mapPanel" hidden></aside>
+    <div class="map-zoom" role="group" aria-label="Zoom">
+      <button type="button" id="zoomOut" aria-label="Zoom out">−</button>
+      <button type="button" id="zoomFit">Fit</button>
+      <button type="button" id="zoomIn" aria-label="Zoom in">+</button>
+    </div>
+  </section>
   <section id="timelineView" class="timeline" aria-label="Timeline of events"></section>
   <section id="wallView" class="wall" aria-label="Wall view grouped by lane" hidden></section>
   <p class="empty" id="emptyMsg" hidden>Nothing on the board matches. Clear a filter or the search.</p>
