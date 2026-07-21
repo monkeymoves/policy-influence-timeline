@@ -1,314 +1,304 @@
 (() => {
-  const archive = window.ARCHIVE;
-  if (!archive) throw new Error('Archive data was not loaded.');
+  const DATA = window.TIMELINE;
+  if (!DATA) throw new Error('Timeline data was not loaded.');
 
-  const itemById = new Map(archive.items.map((item) => [item.id, item]));
-  const laneById = new Map(archive.lanes.map((lane) => [lane.id, lane]));
-  const map = document.getElementById('timeline-map');
-  const nodesRoot = document.getElementById('event-nodes');
-  const labelsRoot = document.getElementById('lane-labels');
-  const axisRoot = document.getElementById('axis');
-  const connectionsSvg = document.getElementById('connections');
-  const filtersRoot = document.getElementById('lane-filters');
-  const detailPanel = document.getElementById('detail-panel');
-  const mobileList = document.getElementById('mobile-list');
-  const layout = {
-    width: 3040,
-    height: 1770,
-    left: 170,
-    right: 28,
-    laneTop: 100,
-    laneGap: 270,
-    nodeWidth: 200,
-    nodeHeight: 112,
-    minDate: Date.parse('2025-02-01T00:00:00Z'),
-    maxDate: Date.parse('2026-07-31T00:00:00Z')
-  };
+  const laneById = new Map(DATA.lanes.map(l => [l.id, l]));
+  const items = [...DATA.items].sort((a, b) =>
+    (a.date || '').localeCompare(b.date || '') || a.order - b.order);
 
-  let activeLane = 'all';
-  let selectedId = null;
-  const positions = new Map();
-  const nodeElements = new Map();
-  const pathElements = new Map();
+  const state = { lanes: new Set(), query: '', view: 'timeline' };
 
-  function parseItemDate(item) {
-    if (!item.date) return layout.minDate;
-    const normalized = item.date.length === 7 ? `${item.date}-15T00:00:00Z` : `${item.date}T00:00:00Z`;
-    return Date.parse(normalized);
+  const $ = id => document.getElementById(id);
+  const timelineEl = $('timelineView');
+  const wallEl = $('wallView');
+  const emptyEl = $('emptyMsg');
+  const scrubberEl = $('scrubber');
+
+  /* All rendering uses document.createElement + textContent (no innerHTML),
+     so board text can never execute as markup. */
+  function el(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text != null) node.textContent = text;
+    return node;
   }
 
-  function xFor(item) {
-    const ratio = (parseItemDate(item) - layout.minDate) / (layout.maxDate - layout.minDate);
-    return layout.left + Math.max(0, Math.min(1, ratio)) * (layout.width - layout.left - layout.right - layout.nodeWidth);
+  /* ---------- helpers ---------- */
+
+  const MONTHS = ['January','February','March','April','May','June',
+    'July','August','September','October','November','December'];
+
+  function monthKey(item) { return (item.date || '2025-01').slice(0, 7); }
+
+  function monthLabel(key) {
+    const [y, m] = key.split('-').map(Number);
+    return `${MONTHS[m - 1]} ${y}`;
   }
 
-  function addAxis() {
-    let cursor = new Date('2025-02-01T00:00:00Z');
-    while (cursor <= new Date('2026-07-01T00:00:00Z')) {
-      const ratio = (cursor.getTime() - layout.minDate) / (layout.maxDate - layout.minDate);
-      const tick = document.createElement('div');
-      tick.className = 'axis__tick';
-      tick.style.left = `${ratio * 100}%`;
-      const label = document.createElement('span');
-      const includeYear = cursor.getUTCMonth() === 0 || (cursor.getUTCFullYear() === 2025 && cursor.getUTCMonth() === 1);
-      label.textContent = cursor.toLocaleDateString('en-GB', { month: 'short', year: includeYear ? 'numeric' : undefined, timeZone: 'UTC' });
-      tick.append(label);
-      axisRoot.append(tick);
-      cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+  function phaseFor(key) {
+    return DATA.phases.find(p => key >= p.from && key <= p.to) || null;
+  }
+
+  function visible(item) {
+    if (state.lanes.size && !state.lanes.has(item.lane)) return false;
+    if (state.query) {
+      const hay = [item.title, item.verbatim, item.detail, item.dateLabel,
+        ...(item.actors || [])].join(' ').toLowerCase();
+      if (!hay.includes(state.query)) return false;
     }
+    return true;
   }
 
-  function addLaneScaffolding() {
-    archive.lanes.forEach((lane, index) => {
-      const y = layout.laneTop + index * layout.laneGap;
-      const label = document.createElement('div');
-      label.className = 'lane-label';
-      label.style.top = `${y}px`;
-      label.style.setProperty('--lane-color', lane.color);
-      label.textContent = lane.label;
-      labelsRoot.append(label);
+  /* ---------- timeline view ---------- */
 
-      const guide = document.createElement('div');
-      guide.className = 'lane-guide';
-      guide.style.top = `${y}px`;
-      map.append(guide);
-    });
+  function renderTimeline() {
+    const shown = items.filter(visible);
+    emptyEl.hidden = shown.length > 0;
+    timelineEl.replaceChildren();
+
+    const groups = new Map();
+    for (const item of shown) {
+      const key = monthKey(item);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(item);
+    }
+
+    let lastPhase = null;
+    for (const [key, group] of [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+      const groupEl = el('div', 'month-group');
+      groupEl.dataset.month = key;
+
+      const marker = el('h2', 'month-marker', monthLabel(key));
+      marker.id = `m-${key}`;
+      groupEl.append(marker);
+
+      const phase = phaseFor(key);
+      if (phase && phase.id !== lastPhase) {
+        groupEl.append(el('span', 'month-note', phase.label));
+        lastPhase = phase.id;
+      } else if (phase) {
+        lastPhase = phase.id;
+      }
+
+      const cards = el('div', 'cards');
+      for (const item of group) cards.append(cardEl(item));
+      groupEl.append(cards);
+      timelineEl.append(groupEl);
+    }
+    observeMonths();
   }
 
-  function calculatePositions() {
-    archive.lanes.forEach((lane, laneIndex) => {
-      const items = archive.items.filter((item) => item.lane === lane.id).sort((a, b) => a.order - b.order);
-      const tiers = [[], []];
-      items.forEach((item, index) => tiers[index % 2].push({ item, baseX: xFor(item) }));
-
-      tiers.forEach((tierItems, tier) => {
-        const gap = 24;
-        const minX = layout.left;
-        const maxX = layout.width - layout.right - layout.nodeWidth;
-        const xs = [];
-        tierItems.forEach((entry, index) => {
-          xs[index] = index === 0
-            ? Math.max(minX, entry.baseX)
-            : Math.max(entry.baseX, xs[index - 1] + layout.nodeWidth + gap);
-        });
-
-        tierItems.forEach((entry, index) => { entry.x = xs[index]; });
-
-        if (tierItems.length && tierItems[tierItems.length - 1].x > maxX) {
-          tierItems[tierItems.length - 1].x = maxX;
-          for (let index = tierItems.length - 2; index >= 0; index -= 1) {
-            tierItems[index].x = Math.min(tierItems[index].x, tierItems[index + 1].x - layout.nodeWidth - gap);
-          }
-        }
-
-        if (tierItems.length && tierItems[0].x < minX) {
-          tierItems[0].x = minX;
-          for (let index = 1; index < tierItems.length; index += 1) {
-            tierItems[index].x = Math.max(tierItems[index].x, tierItems[index - 1].x + layout.nodeWidth + gap);
-          }
-        }
-
-        tierItems.forEach(({ item, x }) => {
-          const y = layout.laneTop + 34 + laneIndex * layout.laneGap + tier * 126;
-          positions.set(item.id, { x, y, width: layout.nodeWidth, height: layout.nodeHeight });
-        });
-      });
-    });
-  }
-
-  function createNode(item) {
+  function cardEl(item) {
     const lane = laneById.get(item.lane);
-    const position = positions.get(item.id);
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'event-node';
-    button.style.left = `${position.x}px`;
-    button.style.top = `${position.y}px`;
-    button.style.setProperty('--lane-color', lane.color);
-    button.dataset.itemId = item.id;
-    button.setAttribute('aria-label', `${item.dateLabel}: ${item.title}`);
+    const card = el('article', 'card' + (item.highlight ? ' card--highlight' : ''));
+    card.style.setProperty('--lane-color', lane.color);
+    card.id = item.id;
 
-    const date = document.createElement('span');
-    date.className = 'event-node__date';
-    date.textContent = item.dateLabel;
-    const title = document.createElement('span');
-    title.className = 'event-node__title';
-    title.textContent = item.title;
-    button.append(date, title);
-    button.addEventListener('click', () => selectItem(item.id));
-    nodesRoot.append(button);
-    nodeElements.set(item.id, button);
-  }
-
-  function createConnections() {
-    connectionsSvg.setAttribute('viewBox', `0 0 ${layout.width} ${layout.height}`);
-    const marker = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-    marker.innerHTML = '<marker id="arrowhead" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#8d9b97"></path></marker>';
-    connectionsSvg.append(marker);
-
-    archive.relationships.forEach((relationship) => {
-      const source = positions.get(relationship.source);
-      const target = positions.get(relationship.target);
-      const sx = source.x + source.width / 2;
-      const sy = source.y + source.height / 2;
-      const tx = target.x + target.width / 2;
-      const ty = target.y + target.height / 2;
-      const cx = (sx + tx) / 2;
-      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', `M ${sx} ${sy} C ${cx} ${sy}, ${cx} ${ty}, ${tx} ${ty}`);
-      path.setAttribute('marker-end', 'url(#arrowhead)');
-      path.dataset.relationshipId = relationship.id;
-      connectionsSvg.append(path);
-      pathElements.set(relationship.id, path);
-    });
-  }
-
-  function createFilters() {
-    const options = [{ id: 'all', label: 'All' }, ...archive.lanes];
-    options.forEach((option) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'filter-button';
-      button.textContent = option.label;
-      button.dataset.lane = option.id;
-      button.setAttribute('aria-pressed', option.id === activeLane ? 'true' : 'false');
-      button.addEventListener('click', () => {
-        activeLane = option.id;
-        filtersRoot.querySelectorAll('button').forEach((entry) => entry.setAttribute('aria-pressed', entry === button ? 'true' : 'false'));
-        updateVisibility();
-      });
-      filtersRoot.append(button);
-    });
-  }
-
-  function createMobileList() {
-    archive.items.slice().sort((a, b) => a.order - b.order).forEach((item) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'mobile-item';
-      button.dataset.itemId = item.id;
-      button.style.setProperty('--lane-color', laneById.get(item.lane).color);
-      const date = document.createElement('small');
-      date.textContent = item.dateLabel;
-      const title = document.createElement('strong');
-      title.textContent = item.title;
-      button.append(date, title);
-      button.addEventListener('click', () => {
-        selectItem(item.id);
-        detailPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-      mobileList.append(button);
-    });
-  }
-
-  function updateVisibility() {
-    archive.items.forEach((item) => {
-      const visible = activeLane === 'all' || item.lane === activeLane;
-      nodeElements.get(item.id).hidden = !visible;
-      const mobile = mobileList.querySelector(`[data-item-id="${item.id}"]`);
-      if (mobile) mobile.hidden = !visible;
-    });
-    archive.relationships.forEach((relationship) => {
-      const sourceVisible = activeLane === 'all' || itemById.get(relationship.source).lane === activeLane;
-      const targetVisible = activeLane === 'all' || itemById.get(relationship.target).lane === activeLane;
-      pathElements.get(relationship.id).style.display = sourceVisible && targetVisible ? '' : 'none';
-    });
-  }
-
-  function createText(tag, className, text) {
-    const element = document.createElement(tag);
-    if (className) element.className = className;
-    element.textContent = text;
-    return element;
-  }
-
-  function renderDetail(item) {
-    detailPanel.replaceChildren();
-    detailPanel.append(
-      createText('p', 'detail-panel__date', item.dateLabel),
-      createText('h3', '', item.title),
-      createText('p', 'detail-panel__body', item.detail),
-      createText('p', 'detail-panel__verbatim', `“${item.verbatim}”`)
-    );
-
-    const details = document.createElement('dl');
-    const pairs = [
-      ['Lane', laneById.get(item.lane).label],
-      ['Actors', item.actors.join(', ')]
-    ];
-    pairs.forEach(([term, value]) => {
-      details.append(createText('dt', '', term));
-      const dd = createText('dd', '', value);
-      details.append(dd);
-    });
-    detailPanel.append(details);
-
-    const reviewPairs = [];
-    if (Array.isArray(item.sourceRefs) && item.sourceRefs.length) reviewPairs.push(['Source', item.sourceRefs.join(', ')]);
-    if (item.confidence) reviewPairs.push(['Confidence', item.confidence]);
-    if (item.datePrecision) reviewPairs.push(['Date basis', item.datePrecision]);
-
-    if (reviewPairs.length || item.notes) {
-      const review = document.createElement('details');
-      review.className = 'editorial-review';
-      review.append(createText('summary', '', 'Editorial review'));
-      if (reviewPairs.length) {
-        const reviewDetails = document.createElement('dl');
-        reviewPairs.forEach(([term, value]) => {
-          reviewDetails.append(createText('dt', '', term), createText('dd', term === 'Confidence' ? 'confidence' : '', value));
-        });
-        review.append(reviewDetails);
-      }
-      if (item.notes) review.append(createText('p', '', item.notes));
-      detailPanel.append(review);
+    const top = el('div', 'card-top');
+    const date = el('span', 'card-date', item.dateLabel);
+    date.style.color = lane.ink;
+    top.append(date, el('span', 'card-lane', lane.label));
+    if (item.starred) {
+      const star = el('span', 'card-star', '✦');
+      star.title = 'Starred on the board';
+      top.append(star);
     }
+    card.append(top);
 
-    const related = archive.relationships.filter((relationship) => relationship.source === item.id || relationship.target === item.id);
-    if (related.length) {
-      const section = document.createElement('div');
-      section.className = 'detail-panel__connections';
-      section.append(createText('h4', '', 'Connected moments'));
-      related.forEach((relationship) => {
-        const otherId = relationship.source === item.id ? relationship.target : relationship.source;
-        const other = itemById.get(otherId);
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.textContent = `${relationship.source === item.id ? '→' : '←'} ${relationship.label}: ${other.title}`;
-        button.addEventListener('click', () => selectItem(otherId));
-        section.append(button);
-      });
-      detailPanel.append(section);
+    card.append(el('h3', 'card-title', item.title));
+
+    const verbatim = el('p', 'card-verbatim');
+    verbatim.append(el('span', 'q', '“' + item.verbatim + '”'));
+    card.append(verbatim);
+
+    card.append(el('p', 'card-detail', item.detail));
+
+    const actors = el('div', 'card-actors');
+    for (const a of item.actors || []) actors.append(el('span', 'actor', a));
+    card.append(actors);
+    return card;
+  }
+
+  /* ---------- wall view ---------- */
+
+  function renderWall() {
+    const shown = items.filter(visible);
+    emptyEl.hidden = shown.length > 0;
+    wallEl.replaceChildren();
+
+    for (const lane of DATA.lanes) {
+      const laneItems = shown.filter(i => i.lane === lane.id);
+      if (!laneItems.length) continue;
+
+      const col = el('div', 'wall-col');
+      col.style.setProperty('--lane-color', lane.color);
+      const heading = el('h2', null, lane.label + ' ');
+      heading.append(el('span', 'count', `(${laneItems.length})`));
+      col.append(heading);
+
+      for (const item of laneItems) {
+        const sticky = el('div', 'sticky');
+        sticky.style.setProperty('--lane-color', lane.color);
+        sticky.append(el('span', 's-date', item.dateLabel));
+        sticky.append(el('p', 's-text', item.title));
+        col.append(sticky);
+      }
+      wallEl.append(col);
     }
   }
 
-  function selectItem(id) {
-    selectedId = id;
-    const connectedIds = new Set([id]);
-    const highlightedRelationshipIds = new Set();
-    archive.relationships.forEach((relationship) => {
-      if (relationship.source === id || relationship.target === id) {
-        connectedIds.add(relationship.source);
-        connectedIds.add(relationship.target);
-        highlightedRelationshipIds.add(relationship.id);
-      }
-    });
+  /* ---------- scrubber ---------- */
 
-    nodeElements.forEach((element, itemId) => {
-      element.classList.toggle('is-selected', itemId === id);
-      element.classList.toggle('is-related', itemId !== id && connectedIds.has(itemId));
+  function buildScrubber() {
+    const keys = [...new Set(items.map(monthKey))].sort();
+    scrubberEl.replaceChildren();
+    let lastPhase = null;
+    for (const key of keys) {
+      const phase = phaseFor(key);
+      if (phase && phase.id !== lastPhase) {
+        scrubberEl.append(el('span', 'scrub-phase', phase.label));
+        lastPhase = phase.id;
+      }
+      const [y, m] = key.split('-');
+      const chip = el('button', 'scrub-chip',
+        `${MONTHS[Number(m) - 1].slice(0, 3)} ${y.slice(2)}`);
+      chip.type = 'button';
+      chip.dataset.month = key;
+      scrubberEl.append(chip);
+    }
+    scrubberEl.addEventListener('click', e => {
+      const chip = e.target.closest('.scrub-chip');
+      if (!chip) return;
+      if (state.view !== 'timeline') setView('timeline');
+      const target = document.getElementById(`m-${chip.dataset.month}`);
+      if (target) target.scrollIntoView({ block: 'start' });
     });
-    pathElements.forEach((element, relationshipId) => element.classList.toggle('is-highlighted', highlightedRelationshipIds.has(relationshipId)));
-    renderDetail(itemById.get(id));
   }
 
-  map.style.width = `${layout.width}px`;
-  map.style.height = `${layout.height}px`;
-  addAxis();
-  addLaneScaffolding();
-  calculatePositions();
-  archive.items.forEach(createNode);
-  createConnections();
-  createFilters();
-  createMobileList();
-  selectItem('e03');
+  let observer = null;
+  function observeMonths() {
+    if (observer) observer.disconnect();
+    observer = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const key = entry.target.dataset.month;
+        for (const chip of scrubberEl.querySelectorAll('.scrub-chip')) {
+          const current = chip.dataset.month === key;
+          chip.classList.toggle('is-current', current);
+          if (current) chip.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }
+      }
+    }, { rootMargin: '-25% 0px -65% 0px' });
+    for (const g of timelineEl.querySelectorAll('.month-group')) observer.observe(g);
+  }
+
+  /* ---------- filters ---------- */
+
+  function buildFilters() {
+    const counts = new Map(DATA.lanes.map(l => [l.id, 0]));
+    for (const item of items) counts.set(item.lane, counts.get(item.lane) + 1);
+
+    const wrap = $('laneFilters');
+    wrap.replaceChildren();
+    for (const lane of DATA.lanes) {
+      const chip = el('button', 'lane-chip');
+      chip.type = 'button';
+      chip.dataset.lane = lane.id;
+      chip.setAttribute('aria-pressed', 'false');
+      chip.style.setProperty('--lane-color', lane.color);
+      const dot = el('span', 'dot');
+      dot.setAttribute('aria-hidden', 'true');
+      chip.append(dot, document.createTextNode(lane.label + ' '),
+        el('span', 'count', String(counts.get(lane.id))));
+      wrap.append(chip);
+    }
+    wrap.addEventListener('click', e => {
+      const chip = e.target.closest('.lane-chip');
+      if (!chip) return;
+      const lane = chip.dataset.lane;
+      if (state.lanes.has(lane)) state.lanes.delete(lane);
+      else state.lanes.add(lane);
+      chip.setAttribute('aria-pressed', state.lanes.has(lane) ? 'true' : 'false');
+      render();
+    });
+
+    let debounce = null;
+    $('searchBox').addEventListener('input', e => {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => {
+        state.query = e.target.value.trim().toLowerCase();
+        render();
+      }, 120);
+    });
+  }
+
+  /* ---------- view toggle ---------- */
+
+  function setView(view) {
+    state.view = view;
+    timelineEl.hidden = view !== 'timeline';
+    wallEl.hidden = view !== 'wall';
+    for (const [id, v] of [['viewTimeline', 'timeline'], ['viewWall', 'wall']]) {
+      const btn = $(id);
+      btn.classList.toggle('is-active', v === view);
+      btn.setAttribute('aria-pressed', v === view ? 'true' : 'false');
+    }
+    render();
+  }
+  $('viewTimeline').addEventListener('click', () => setView('timeline'));
+  $('viewWall').addEventListener('click', () => setView('wall'));
+
+  /* ---------- exports ---------- */
+
+  function download(name, text, type) {
+    const url = URL.createObjectURL(new Blob([text], { type }));
+    const a = Object.assign(document.createElement('a'), { href: url, download: name });
+    document.body.append(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  const csvCell = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+
+  function exportCsv() {
+    const head = ['id','date','date_label','phase','lane','title','verbatim','detail','actors','starred','highlighted'];
+    const rows = items.map(i => [
+      i.id, i.date || '', i.dateLabel, (phaseFor(monthKey(i)) || {}).label || '',
+      laneById.get(i.lane).label, i.title, i.verbatim, i.detail,
+      (i.actors || []).join('; '), i.starred ? 'yes' : '', i.highlight ? 'yes' : ''
+    ].map(csvCell).join(','));
+    download('policy-influence-timeline.csv',
+      '﻿' + head.join(',') + '\n' + rows.join('\n'), 'text/csv;charset=utf-8');
+  }
+
+  function exportJson() {
+    download('policy-influence-timeline.json',
+      JSON.stringify(DATA, null, 2), 'application/json');
+  }
+
+  function exportMural() {
+    const lines = items.map(i =>
+      `${i.dateLabel} | ${i.title} | ${laneById.get(i.lane).label}`);
+    download('mural-sticky-notes.txt', lines.join('\n'), 'text/plain;charset=utf-8');
+  }
+
+  document.querySelectorAll('[data-export]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const kind = btn.dataset.export;
+      if (kind === 'csv') exportCsv();
+      else if (kind === 'json') exportJson();
+      else exportMural();
+    }));
+
+  /* ---------- boot ---------- */
+
+  function render() {
+    if (state.view === 'timeline') renderTimeline();
+    else renderWall();
+  }
+
+  buildScrubber();
+  buildFilters();
+  render();
 })();
